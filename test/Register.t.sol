@@ -6,47 +6,40 @@ import "../src/Register.sol";
 import "../src/RealEstateToken.sol";
 
 contract RegisterTest is Test {
+    event PropertyRegistered(
+        uint256 indexed propertyId,
+        address indexed owner,
+        address tokenAddress
+    );
     Register register;
-    address uniswapV2FactoryAddress =
-        address(0xc9f18c25Cfca2975d6eD18Fc63962EBd1083e978); // testnet // vm.envAddress("UNISWAPV2_FACTORY_ADDR")
     address propertyOwner;
-    address investor;
     RealEstateToken ret;
+    uint256 saleDuration = 1 weeks; //7 * 24 * 60 * 60 秒，即 604800 秒
+    uint256 realWorldValue = 1000000 * 1e6; // 1 usd = 1 usdc
 
     function setUp() public {
+        //roles
         register = new Register();
         propertyOwner = makeAddr("propertyOwner");
-        investor = makeAddr("investor");
-        uint256 totalSupply = 1000000 * 1e6;
-        uint256 saleDuration = 1 weeks; //7 * 24 * 60 * 60 秒，即 604800 秒
+    }
+
+    function testRegisterProperty() public {
         vm.startPrank(propertyOwner);
-        register.registerProperty(totalSupply, saleDuration);
+
+        // Call function
+        register.registerProperty(realWorldValue, saleDuration);
         vm.stopPrank();
         (address owner, address tokenAddress) = register.properties(0);
-        require(tokenAddress != address(0));
         ret = RealEstateToken(tokenAddress);
+
+        require(tokenAddress != address(0));
         assertEq(owner, propertyOwner);
         require(tokenAddress != address(0));
-        assertEq(ret.getInitialPropertyPrice(), totalSupply);
-        assertGt(ret.saleEndTime(), block.timestamp);
-    }
+        assertEq(ret.getInitialPropertyPrice(), realWorldValue);
+        assertGt(ret.saleEndTime(), saleDuration);
 
-    // function testRegisterProperty() public {
-    //     assertEq(owner, propertyOwner);
-    //     require(tokenAddress != address(0));
-    //     assertEq(ret.getInitialPropertyPrice(), totalSupply);
-    //     assertGt(ret.saleEndTime(), block.timestamp);
-    // }
-
-    function testInitialCoinOffering() public {
-        vm.startPrank(investor);
-        ret.InitialCoinOffering(1000 * 1e6); //bug
-        assertEq(ret.balanceOf(investor), 1000 * 1e6);
-        vm.stopPrank();
-    }
-
-    function testInitialCoinOfferingEnd() public {
-        vm.startPrank(investor);
-        //TODO: test when sale end
+        // 設置預期的事件, // 1, 2, 3 是有建立的indexed的索引參數的期望值，當有設置indexed方便進行事件過濾; 4. 事件的data即那些沒有標記為 indexed 的參數
+        // vm.expectEmit(true, true, false, true);
+        // emit PropertyRegistered(0, propertyOwner, address(ret)); // 使用具體的期望值
     }
 }

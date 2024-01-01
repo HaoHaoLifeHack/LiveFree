@@ -7,11 +7,13 @@ import "v2-core/interfaces/IUniswapV2Factory.sol";
 
 contract RealEstateToken is ERC20 {
     address public propertyOwner;
-    uint256 private _totalSupply;
     uint256 private totalTokenSupply;
+    uint256 public soldTokens; // track sold tokens
     uint256 public saleEndTime;
+    bool public saleEnded;
+
     uint256 public tokenPrice = 1e6; // Token initial price，1 token = 1 u
-    IERC20 public usdc = IERC20(0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8);
+    IERC20 public usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     IUniswapV2Factory public uniswapV2Factory;
 
     constructor(
@@ -22,7 +24,7 @@ contract RealEstateToken is ERC20 {
         propertyOwner = _owner;
         totalTokenSupply = _initialPropertyPrice;
         saleEndTime = block.timestamp + _saleDuration;
-        //uniswapV2Factory.createPair(address(this), address(usdc));
+        saleEnded = false;
     }
 
     function InitialCoinOffering(uint256 amount) public {
@@ -32,33 +34,25 @@ contract RealEstateToken is ERC20 {
             "Transfer failed"
         );
         _mint(msg.sender, amount);
+        soldTokens += amount; // update sold tokens
     }
 
-    // function _mint(address account, uint256 amount) internal virtual {
-    //     require(amount > 0, "Amount must be greater than 0");
-    //     require(account != address(0), "Account must not be 0");
-    //     _totalSupply += amount;
-    //     emit Transfer(address(0), account, amount);
-    // }
+    function endICO() public {
+        require(block.timestamp >= saleEndTime, "Sale has not ended yet");
+        require(!saleEnded, "Sale already ended");
+        require(
+            msg.sender == propertyOwner,
+            "Only property owner can end the sale"
+        );
 
-    function mintRemainingToOwner() public {
-        require(block.timestamp >= saleEndTime, "Sale period not ended yet");
         uint256 remaining = totalSupply() - balanceOf(address(this));
         if (remaining > 0) {
             _mint(propertyOwner, remaining);
         }
+        saleEnded = true;
     }
-
-    // function totalSupply() public view override returns (uint256) {
-    //     return _totalSupply;
-    // }
 
     function getInitialPropertyPrice() public view returns (uint256) {
         return totalTokenSupply;
-    }
-
-    function setSaleDurationEnd() public {
-        //for test
-        saleEndTime = 1;
     }
 }

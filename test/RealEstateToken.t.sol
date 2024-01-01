@@ -1,24 +1,74 @@
-// // SPDX-License-Identifier: UNLICENSED
-// pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// import {Test, console2} from "forge-std/Test.sol";
-// import {Counter} from "../src/Counter.sol";
+import "forge-std/Test.sol";
+import "../src/Register.sol";
+import "../src/RealEstateToken.sol";
 
-// contract CounterTest is Test {
-//     Counter public counter;
+contract RealEstateTokenTest is Test {
+    Register register;
+    address uniswapV2FactoryAddress =
+        address(0xc9f18c25Cfca2975d6eD18Fc63962EBd1083e978); // testnet // vm.envAddress("UNISWAPV2_FACTORY_ADDR")
+    address propertyOwner;
+    address investor;
+    RealEstateToken ret;
+    ERC20 usdc;
+    uint256 saleDuration = 1 weeks; //7 * 24 * 60 * 60 秒，即 604800 秒
 
-//     function setUp() public {
-//         counter = new Counter();
-//         counter.setNumber(0);
-//     }
+    function setUp() public {
+        //fork mainnet at block 17465000
+        string memory rpc = vm.envString("MAINNET_RPC_URL");
+        vm.createSelectFork(rpc, 17465000);
 
-//     function test_Increment() public {
-//         counter.increment();
-//         assertEq(counter.number(), 1);
-//     }
+        //roles
+        register = new Register();
+        propertyOwner = makeAddr("propertyOwner");
+        investor = makeAddr("investor");
 
-//     function testFuzz_SetNumber(uint256 x) public {
-//         counter.setNumber(x);
-//         assertEq(counter.number(), x);
-//     }
-// }
+        //tokens
+        usdc = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+
+        uint256 realWorldValue = 1000000 * 1e6;
+        //uint256 saleDuration = 1 weeks;
+        vm.startPrank(propertyOwner);
+        register.registerProperty(realWorldValue, saleDuration);
+        vm.stopPrank();
+        (address owner, address tokenAddress) = register.properties(0);
+        ret = RealEstateToken(tokenAddress);
+        require(tokenAddress != address(0));
+
+        assertEq(owner, propertyOwner);
+        require(tokenAddress != address(0));
+        assertEq(ret.getInitialPropertyPrice(), realWorldValue);
+        assertGt(ret.saleEndTime(), block.timestamp);
+        deal(address(usdc), investor, 100000 * 1e6);
+    }
+
+    function testInitialCoinOffering() public {
+        vm.startPrank(investor);
+        usdc.approve(address(ret), usdc.balanceOf(investor));
+        usdc.balanceOf(investor);
+        ret.balanceOf(investor);
+        ret.InitialCoinOffering(1000 * 1e6);
+        assertEq(ret.balanceOf(investor), 1000 * 1e6);
+        vm.stopPrank();
+    }
+
+    function testMintToOwnerAfterICOEnds() public {
+        // simulate time fly to the end of ICO
+        vm.warp(block.timestamp + saleDuration + 1);
+
+        // property owner ends the sale
+        vm.prank(propertyOwner);
+        ret.endICO();
+
+        // property owner should receive all remaining tokens
+        uint256 remainingTokens = ret.balanceOf(propertyOwner);
+        uint256 expectedRemaining = ret.totalSupply() - ret.soldTokens(); // 追蹤已售出的代幣數量
+        assertEq(
+            remainingTokens,
+            expectedRemaining,
+            "Property owner should receive all remaining tokens"
+        );
+    }
+}
