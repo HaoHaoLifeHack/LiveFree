@@ -11,14 +11,14 @@ contract DividendDistribution {
     }
 
     function calculateDividends() public {
-        // 实现分红计算逻辑
+        // 分红計算邏輯
     }
 
     function distributeDividends() public {
-        // 实现分红分配逻辑
+        // 分红分配邏輯
     }
 
     function withdrawDividends(address holder) public {
-        // 实现分红提取逻辑
+        // 分红提款邏輯
     }
 }

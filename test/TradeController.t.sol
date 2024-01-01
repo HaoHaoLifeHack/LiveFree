@@ -76,6 +76,7 @@ contract TradeControllerTest is Test {
         // initial balance
         deal(address(usdc), propertyOwner, 100000 * 1e6);
         deal(address(usdc), investor, 100000 * 1e6);
+        deal(address(ret), investor, 100000 * 1e6);
         deal(address(usdc), liquidityProvider, 1000000 * 1e6);
         deal(address(ret), liquidityProvider, 1000000 * 1e6);
 
@@ -135,7 +136,6 @@ contract TradeControllerTest is Test {
         vm.stopPrank();
     }
 
-    //bug
     function testRemoveLiquidity() public {
         addLiquidity();
         uint liquidity = 50e6; // 預計移除的流動性
@@ -157,8 +157,8 @@ contract TradeControllerTest is Test {
     function addLiquidity() private {
         createPair();
         vm.startPrank(liquidityProvider);
-        uint retAmount = 100e6; // 100 RET
-        uint usdcAmount = 100e6; // 100 USDC
+        uint retAmount = 1000e6; // 100 RET
+        uint usdcAmount = 1000e6; // 100 USDC
         ret.approve(address(tradeController), retAmount);
         usdc.approve(address(tradeController), usdcAmount);
         tradeController.addLiquidity(retAmount, usdcAmount);
@@ -170,19 +170,37 @@ contract TradeControllerTest is Test {
     }
 
     function testSwapUSDCForTokens() public {
-        uint usdcAmount = 50e6; // buy 50 RET
-        // 呼叫 swapUSDCForTokens 函數
-        vm.startPrank(investor);
+        addLiquidity();
+        uint256 usdcAmount = 50e6; // buy 50 RET
+        uint256 retBalanceOld = ret.balanceOf(investor);
+
+        // calculate k
+        (uint retReserveOld, uint usdcReserveOld, ) = IUniswapV2Pair(pair)
+            .getReserves();
+        uint k = retReserveOld * usdcReserveOld;
+        console2.log("k: ", k);
+        // calculate amountOut
+        uint reserveOut = k / (usdcReserveOld + usdcAmount);
+        uint amountOut = retReserveOld - reserveOut;
+        console2.log("reserveOut: ", reserveOut);
+        console2.log("amountOut: ", amountOut);
+        //
+
+        vm.startPrank(investor); // 呼叫 swapUSDCForTokens 函數
         // ret.approve(address(tradeController), ret.balanceOf(investor));
         usdc.approve(address(tradeController), usdc.balanceOf(investor));
         tradeController.swapUSDCForTokens(usdcAmount);
-        console2.log(ret.balanceOf(investor));
+
         // 驗證 USDC 兌換
         // 進一步的驗證可以加在這裡
+        console2.log("ret balance of investor: ", ret.balanceOf(investor));
+        console2.log("diff: ", ret.balanceOf(investor) - amountOut);
         vm.stopPrank();
     }
 
     function testSwapTokensForUSDC() public {
+        addLiquidity();
+        deal(address(ret), investor, 100e6);
         uint retAmount = 80e6; // buy 80 usdc
 
         // 呼叫 swapTokensForUSDC 函數
@@ -190,7 +208,8 @@ contract TradeControllerTest is Test {
         ret.approve(address(tradeController), ret.balanceOf(investor));
         // usdc.approve(address(tradeController), usdc.balanceOf(investor));
         tradeController.swapTokensForUSDC(retAmount);
-
+        console2.log("ret balance of investor: ", ret.balanceOf(investor));
+        console2.log("usdc balance of investor: ", usdc.balanceOf(investor));
         // 驗證RET兌換
         // 進一步的驗證可以加在這裡
         vm.stopPrank();
