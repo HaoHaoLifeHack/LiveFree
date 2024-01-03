@@ -31,7 +31,10 @@ contract TradeController {
         usdc = _usdc;
     }
 
-    function createPairWithUSDC() public returns (address pair) {
+    function createPairWithUSDC(
+        uint256 tokenAmount,
+        uint256 usdcAmount
+    ) public returns (address pair) {
         pair = uniswapV2Factory.createPair(ret, usdc);
         emit PairCreated(ret, usdc, pair);
     }
@@ -55,55 +58,79 @@ contract TradeController {
         );
     }
 
-    function removeLiquidity(uint liquidity) public {
-        IERC20 liquidityToken = IERC20(
-            UniswapV2Library.pairFor(address(uniswapV2Factory), ret, usdc)
-        );
-        liquidityToken.transferFrom(msg.sender, address(this), liquidity);
-        liquidityToken.approve(address(uniswapV2Router), liquidity);
+    function createPairAndAddLiquidity(
+        uint256 tokenAmount,
+        uint256 usdcAmount
+    ) external {
+        // 確保合約有足夠的代幣權限
+        ret.approve(address(uniswapRouter), tokenAmount);
+        usdc.approve(address(uniswapRouter), usdcAmount);
 
-        uniswapV2Router.removeLiquidity(
-            ret,
-            usdc,
-            liquidity,
-            0, // 設定最小接收量為0
-            0, // 設定最小接收量為0
-            msg.sender,
-            block.timestamp
-        );
-    }
+        uniswapFactory.createPair(address(ret), address(usdc));
+        emit PairCreated(ret, usdc, pair);
 
-    function swapUSDCForTokens(uint usdcAmount) public {
-        IERC20(usdc).transferFrom(msg.sender, address(this), usdcAmount);
-        IERC20(usdc).approve(address(uniswapV2Router), usdcAmount);
-
-        address[] memory path = new address[](2);
-        path[0] = usdc; // 來源token
-        path[1] = ret; // 目標token
-
-        uniswapV2Router.swapExactTokensForTokens(
-            usdcAmount,
-            0, // 設定最小接收量為0表示可接受任何數量的RET
-            path,
-            msg.sender,
-            block.timestamp
-        );
-    }
-
-    function swapTokensForUSDC(uint tokenAmount) public {
-        IERC20(ret).transferFrom(msg.sender, address(this), tokenAmount);
-        IERC20(ret).approve(address(uniswapV2Router), tokenAmount);
-
-        address[] memory path = new address[](2);
-        path[0] = ret; // 來源token
-        path[1] = usdc; // 目標token
-
-        uniswapV2Router.swapExactTokensForTokens(
+        // 添加流動性
+        uniswapRouter.addLiquidity(
+            address(ret),
+            address(usdc),
             tokenAmount,
-            0, // 設定最小接收量為0表示可接受任何數量的USDC
-            path,
-            msg.sender,
+            usdcAmount,
+            0, // 最小代幣數量
+            0, // 最小USDC數量
+            address(this),
             block.timestamp
         );
     }
+
+    // function removeLiquidity(uint liquidity) public {
+    //     IERC20 liquidityToken = IERC20(
+    //         UniswapV2Library.pairFor(address(uniswapV2Factory), ret, usdc)
+    //     );
+    //     liquidityToken.transferFrom(msg.sender, address(this), liquidity);
+    //     liquidityToken.approve(address(uniswapV2Router), liquidity);
+
+    //     uniswapV2Router.removeLiquidity(
+    //         ret,
+    //         usdc,
+    //         liquidity,
+    //         0, // 設定最小接收量為0
+    //         0, // 設定最小接收量為0
+    //         msg.sender,
+    //         block.timestamp
+    //     );
+    // }
+
+    // function swapUSDCForTokens(uint usdcAmount) public {
+    //     IERC20(usdc).transferFrom(msg.sender, address(this), usdcAmount);
+    //     IERC20(usdc).approve(address(uniswapV2Router), usdcAmount);
+
+    //     address[] memory path = new address[](2);
+    //     path[0] = usdc; // 來源token
+    //     path[1] = ret; // 目標token
+
+    //     uniswapV2Router.swapExactTokensForTokens(
+    //         usdcAmount,
+    //         0, // 設定最小接收量為0表示可接受任何數量的RET
+    //         path,
+    //         msg.sender,
+    //         block.timestamp
+    //     );
+    // }
+
+    // function swapTokensForUSDC(uint tokenAmount) public {
+    //     IERC20(ret).transferFrom(msg.sender, address(this), tokenAmount);
+    //     IERC20(ret).approve(address(uniswapV2Router), tokenAmount);
+
+    //     address[] memory path = new address[](2);
+    //     path[0] = ret; // 來源token
+    //     path[1] = usdc; // 目標token
+
+    //     uniswapV2Router.swapExactTokensForTokens(
+    //         tokenAmount,
+    //         0, // 設定最小接收量為0表示可接受任何數量的USDC
+    //         path,
+    //         msg.sender,
+    //         block.timestamp
+    //     );
+    // }
 }
