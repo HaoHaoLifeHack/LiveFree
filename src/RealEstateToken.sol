@@ -37,7 +37,7 @@ contract RealEstateToken is ERC20 {
         _mint(propertyOwner, totalRealEstateValue);
     }
 
-    function InitializeICO(uint256 usdcAmount) public {
+    function initializeICO(uint256 usdcAmount) public {
         require(block.timestamp < saleEndTime, "Sale period has ended");
         // transfer investor's usdc to this contract
         require(

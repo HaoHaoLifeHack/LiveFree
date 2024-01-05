@@ -50,7 +50,7 @@ contract RealEstateTokenTest is Test {
         usdc.approve(address(ret), usdc.balanceOf(investor));
         usdc.balanceOf(investor);
         ret.balanceOf(investor);
-        ret.InitializeICO(1000 * 1e6);
+        ret.initializeICO(1000 * 1e6);
         assertEq(ret.balanceOf(investor), 1000 * 1e6);
         vm.stopPrank();
     }
