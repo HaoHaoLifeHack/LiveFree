@@ -7,17 +7,20 @@ import "v2-core/interfaces/IUniswapV2Factory.sol";
 import "./TradeController.sol";
 
 contract RealEstateToken is ERC20 {
+    bool initialized;
     TradeController tradeController;
     address public propertyOwner;
     uint256 public totalRealEstateValue; // 房屋總市值，以美元表示的最小單位
     uint256 public soldTokens; // track sold tokens
     uint256 public saleEndTime;
     bool public saleEnded;
+    ERC20 usdc;
 
     uint256 public tokenPrice = 1e6; // Token initial price，1 token = 1 u
 
-    constructor() ERC20("RealEstateToken", "RET") {
+    constructor(address _usdc) ERC20("RealEstateToken", "RET") {
         propertyOwner = msg.sender;
+        usdc = ERC20(_usdc);
     }
 
     function initialize(
@@ -54,7 +57,7 @@ contract RealEstateToken is ERC20 {
         soldTokens += usdcAmount;
     }
 
-    // transfer remaining into uniswap pair
+    // transfer remainingTokens into uniswap pair
     function finalizeICO() public {
         require(block.timestamp >= saleEndTime, "Sale has not ended yet");
         require(!saleEnded, "Sale already ended");
@@ -63,10 +66,10 @@ contract RealEstateToken is ERC20 {
             "Only property owner can end the sale"
         );
 
-        uint256 remaining = balanceOf(address(this));
+        uint256 remainingTokens = balanceOf(address(this));
         if (remainingTokens > 0) {
             // 將剩餘代幣轉移到TradeController合約
-            transfer(tradeControllerAddress, remainingTokens);
+            transfer(address(tradeController), remainingTokens);
 
             // 從TradeController合約呼叫新增流動性的函數, 並設定每個token 面額為1u
             tradeController.createPairAndAddLiquidity(

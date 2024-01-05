@@ -16,6 +16,7 @@ contract RegisterTest is Test {
     RealEstateToken ret;
     uint256 saleDuration = 1 weeks; //7 * 24 * 60 * 60 秒，即 604800 秒
     uint256 realWorldValue = 1000000 * 1e6; // 1 usd = 1 usdc
+    string ipfsHash = "QmT7NFqXfvpZ6Q6wW6Lf2P4RgTNQgz3e6rAFSVz1Tvax6w";
 
     function setUp() public {
         //roles
@@ -27,7 +28,7 @@ contract RegisterTest is Test {
         vm.startPrank(propertyOwner);
 
         // Call function
-        register.registerProperty(realWorldValue, saleDuration);
+        register.registerProperty(ipfsHash, realWorldValue, saleDuration);
         vm.stopPrank();
         (address owner, address tokenAddress) = register.properties(0);
         ret = RealEstateToken(tokenAddress);
@@ -35,7 +36,7 @@ contract RegisterTest is Test {
         require(tokenAddress != address(0));
         assertEq(owner, propertyOwner);
         require(tokenAddress != address(0));
-        assertEq(ret.getInitialPropertyPrice(), realWorldValue);
+        assertEq(ret.getTotalRealEstateValue(), realWorldValue);
         assertGt(ret.saleEndTime(), saleDuration);
 
         // 設置預期的事件, // 1, 2, 3 是有建立的indexed的索引參數的期望值，當有設置indexed方便進行事件過濾; 4. 事件的data即那些沒有標記為 indexed 的參數

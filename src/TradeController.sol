@@ -31,11 +31,8 @@ contract TradeController {
         usdc = _usdc;
     }
 
-    function createPairWithUSDC(
-        uint256 tokenAmount,
-        uint256 usdcAmount
-    ) public returns (address pair) {
-        pair = uniswapV2Factory.createPair(ret, usdc);
+    function createPairWithUSDC() public returns (address pair) {
+        uniswapV2Factory.createPair(ret, usdc);
         emit PairCreated(ret, usdc, pair);
     }
 
@@ -63,14 +60,14 @@ contract TradeController {
         uint256 usdcAmount
     ) external {
         // 確保合約有足夠的代幣權限
-        ret.approve(address(uniswapRouter), tokenAmount);
-        usdc.approve(address(uniswapRouter), usdcAmount);
+        IERC20(ret).approve(address(uniswapV2Router), tokenAmount);
+        IERC20(usdc).approve(address(uniswapV2Router), usdcAmount);
 
-        uniswapFactory.createPair(address(ret), address(usdc));
+        address pair = uniswapV2Factory.createPair(address(ret), address(usdc));
         emit PairCreated(ret, usdc, pair);
 
         // 添加流動性
-        uniswapRouter.addLiquidity(
+        uniswapV2Router.addLiquidity(
             address(ret),
             address(usdc),
             tokenAmount,

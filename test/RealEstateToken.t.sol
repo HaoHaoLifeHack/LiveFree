@@ -14,6 +14,7 @@ contract RealEstateTokenTest is Test {
     RealEstateToken ret;
     ERC20 usdc;
     uint256 saleDuration = 1 weeks; //7 * 24 * 60 * 60 秒，即 604800 秒
+    string ipfsHash = "QmT7NFqXfvpZ6Q6wW6Lf2P4RgTNQgz3e6rAFSVz1Tvax6w";
 
     function setUp() public {
         //fork mainnet at block 17465000
@@ -29,9 +30,9 @@ contract RealEstateTokenTest is Test {
         usdc = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
         uint256 realWorldValue = 1000000 * 1e6;
-        //uint256 saleDuration = 1 weeks;
+
         vm.startPrank(propertyOwner);
-        register.registerProperty(realWorldValue, saleDuration);
+        register.registerProperty(ipfsHash, realWorldValue, saleDuration);
         vm.stopPrank();
         (address owner, address tokenAddress) = register.properties(0);
         ret = RealEstateToken(tokenAddress);
@@ -39,28 +40,28 @@ contract RealEstateTokenTest is Test {
 
         assertEq(owner, propertyOwner);
         require(tokenAddress != address(0));
-        assertEq(ret.getInitialPropertyPrice(), realWorldValue);
+        assertEq(ret.getTotalRealEstateValue(), realWorldValue);
         assertGt(ret.saleEndTime(), block.timestamp);
         deal(address(usdc), investor, 100000 * 1e6);
     }
 
-    function testInitialCoinOffering() public {
+    function testInitializeICO() public {
         vm.startPrank(investor);
         usdc.approve(address(ret), usdc.balanceOf(investor));
         usdc.balanceOf(investor);
         ret.balanceOf(investor);
-        ret.InitialCoinOffering(1000 * 1e6);
+        ret.InitializeICO(1000 * 1e6);
         assertEq(ret.balanceOf(investor), 1000 * 1e6);
         vm.stopPrank();
     }
 
-    function testMintToOwnerAfterICOEnds() public {
+    function testMintToOwnerAfterFinalizeICO() public {
         // simulate time fly to the end of ICO
         vm.warp(block.timestamp + saleDuration + 1);
 
         // property owner ends the sale
         vm.prank(propertyOwner);
-        ret.endICO();
+        ret.finalizeICO();
 
         // property owner should receive all remaining tokens
         uint256 remainingTokens = ret.balanceOf(propertyOwner);

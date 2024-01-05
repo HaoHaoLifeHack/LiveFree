@@ -9,7 +9,7 @@ contract Register {
         address tokenAddress;
     }
     mapping(uint256 => Property) public properties;
-    uint256 public nextPropertyId;
+    uint256 public nextPropertyId = 0;
 
     event PropertyRegistered(
         uint256 indexed propertyId,
@@ -36,9 +36,15 @@ contract Register {
         }
 
         require(tokenAddress != address(0), "Failed to deploy token");
+        properties[nextPropertyId] = Property(msg.sender, tokenAddress);
 
         emit PropertyRegistered(nextPropertyId, msg.sender, tokenAddress);
         nextPropertyId++;
+
+        RealEstateToken(tokenAddress).initialize(
+            _initialPropertyPrice,
+            _saleDuration
+        );
     }
 
     function isContractDeployed(
