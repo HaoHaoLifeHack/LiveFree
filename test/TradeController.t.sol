@@ -9,8 +9,8 @@ import "v2-core/interfaces/IUniswapV2Pair.sol";
 
 contract TradeControllerTest is Test {
     event PairCreated(
+        address indexed token0,
         address indexed token1,
-        address indexed token2,
         address pair
     );
     // RET
@@ -61,7 +61,12 @@ contract TradeControllerTest is Test {
         // Sepolia: 0xf08A50178dfcDe18524640EA6618a1f965821715
         uint256 realWorldValue = 1000000 * 1e6;
         vm.startPrank(propertyOwner);
-        register.registerProperty(ipfsHash, realWorldValue, saleDuration);
+        register.registerProperty(
+            ipfsHash,
+            realWorldValue,
+            saleDuration,
+            address(usdc)
+        );
         vm.stopPrank();
         (, address tokenAddress) = register.properties(0);
         ret = RealEstateToken(tokenAddress);
@@ -91,19 +96,12 @@ contract TradeControllerTest is Test {
     }
 
     function testCreatePairWithUSDC() public {
-        // // 模擬期望的事件
-        // vm.expectEmit(true, true, false, true);
-        // emit PairCreated(address(ret), address(usdc), pair); // 使用模擬的地址
-
         // 呼叫 createPairWithUSDC 函數
         pair = tradeController.createPairWithUSDC();
         assertEq(
             pair,
-            IUniswapV2Factory(factory).getPair(address(ret), address(usdc))
+            IUniswapV2Factory(factory).getPair(address(usdc), address(ret))
         );
-
-        // 驗證事件是否如預期觸發
-        // 進一步的驗證可以加在這裡
     }
 
     function testAddLiquidity() public {
@@ -137,29 +135,33 @@ contract TradeControllerTest is Test {
         vm.stopPrank();
     }
 
-    // function testRemoveLiquidity() public {
-    //     addLiquidity();
-    //     uint liquidity = 50e6; // 預計移除的流動性
-    //     vm.startPrank(liquidityProvider);
-    //     // 呼叫 removeLiquidity 函數
-    //     tradeController.removeLiquidity(liquidity);
-    //     // record liquidity before remove
-    //     (uint retReserveOld, uint usdcReserveOld, ) = IUniswapV2Pair(pair)
-    //         .getReserves();
-    //     // 驗證流動性是否被移除
-    //     assertEq(IUniswapV2Pair(pair).balanceOf(liquidityProvider), liquidity);
-    //     (uint retReserve, uint usdcReserve, ) = IUniswapV2Pair(pair)
-    //         .getReserves();
-    //     assertEq(retReserve, retReserveOld - liquidity);
-    //     assertEq(usdcReserve, usdcReserveOld - liquidity);
-    //     vm.stopPrank();
-    // }
+    function testCreatePairAndAddLiquidity() public {
+        uint256 retAmount = 1000e6;
+        uint256 usdcAmount = 100e6;
+
+        // 執行新增流動性的操作
+        vm.startPrank(propertyOwner);
+        ret.approve(address(tradeController), retAmount);
+        usdc.approve(address(tradeController), usdcAmount);
+        tradeController.createPairAndAddLiquidity(retAmount, usdcAmount);
+        vm.stopPrank();
+
+        // 驗證Pair是否被正確創建
+        pair = factory.getPair(address(ret), address(usdc));
+        assertTrue(pair != address(0), "Pair was not created");
+
+        // 驗證流動性是否已被加入
+        (uint256 reserveRET, uint256 reserveUSDC, ) = IUniswapV2Pair(pair)
+            .getReserves();
+        assertEq(reserveRET, retAmount, "Incorrect RET reserve");
+        assertEq(reserveUSDC, usdcAmount, "Incorrect USDC reserve");
+    }
 
     function addLiquidity() private {
         createPair();
         vm.startPrank(liquidityProvider);
-        uint retAmount = 1000e6; // 100 RET
-        uint usdcAmount = 1000e6; // 100 USDC
+        uint retAmount = 1000e6; // 1000 RET
+        uint usdcAmount = 1000e6; // 1000 USDC
         ret.approve(address(tradeController), retAmount);
         usdc.approve(address(tradeController), usdcAmount);
         tradeController.addLiquidity(retAmount, usdcAmount);
@@ -169,50 +171,4 @@ contract TradeControllerTest is Test {
     function createPair() private {
         pair = tradeController.createPairWithUSDC();
     }
-
-    // function testSwapUSDCForTokens() public {
-    //     addLiquidity();
-    //     uint256 usdcAmount = 50e6; // buy 50 RET
-    //     uint256 retBalanceOld = ret.balanceOf(investor);
-
-    //     // calculate k
-    //     (uint retReserveOld, uint usdcReserveOld, ) = IUniswapV2Pair(pair)
-    //         .getReserves();
-    //     uint k = retReserveOld * usdcReserveOld;
-    //     console2.log("k: ", k);
-    //     // calculate amountOut
-    //     uint reserveOut = k / (usdcReserveOld + usdcAmount);
-    //     uint amountOut = retReserveOld - reserveOut;
-    //     console2.log("reserveOut: ", reserveOut);
-    //     console2.log("amountOut: ", amountOut);
-    //     //
-
-    //     vm.startPrank(investor); // 呼叫 swapUSDCForTokens 函數
-    //     // ret.approve(address(tradeController), ret.balanceOf(investor));
-    //     usdc.approve(address(tradeController), usdc.balanceOf(investor));
-    //     tradeController.swapUSDCForTokens(usdcAmount);
-
-    //     // 驗證 USDC 兌換
-    //     // 進一步的驗證可以加在這裡
-    //     console2.log("ret balance of investor: ", ret.balanceOf(investor));
-    //     console2.log("diff: ", ret.balanceOf(investor) - amountOut);
-    //     vm.stopPrank();
-    // }
-
-    // function testSwapTokensForUSDC() public {
-    //     addLiquidity();
-    //     deal(address(ret), investor, 100e6);
-    //     uint retAmount = 80e6; // buy 80 usdc
-
-    //     // 呼叫 swapTokensForUSDC 函數
-    //     vm.startPrank(investor);
-    //     ret.approve(address(tradeController), ret.balanceOf(investor));
-    //     // usdc.approve(address(tradeController), usdc.balanceOf(investor));
-    //     tradeController.swapTokensForUSDC(retAmount);
-    //     console2.log("ret balance of investor: ", ret.balanceOf(investor));
-    //     console2.log("usdc balance of investor: ", usdc.balanceOf(investor));
-    //     // 驗證RET兌換
-    //     // 進一步的驗證可以加在這裡
-    //     vm.stopPrank();
-    // }
 }

@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "v2-core/interfaces/IUniswapV2Factory.sol";
 import "./TradeController.sol";
+import "forge-std/console.sol";
 
 contract RealEstateToken is ERC20 {
     bool initialized;
@@ -18,16 +19,16 @@ contract RealEstateToken is ERC20 {
 
     uint256 public tokenPrice = 1e6; // Token initial price，1 token = 1 u
 
-    constructor(address _usdc) ERC20("RealEstateToken", "RET") {
-        propertyOwner = msg.sender;
-        usdc = ERC20(_usdc);
-    }
+    constructor() ERC20("RealEstateToken", "RET") {}
 
     function initialize(
+        address _propertyOwner,
         uint256 _initialPropertyPrice,
-        uint256 _saleDuration
+        uint256 _saleDuration,
+        address _usdc
     ) public {
-        require(msg.sender == propertyOwner, "Only owner can initialize");
+        propertyOwner = _propertyOwner;
+        usdc = ERC20(_usdc);
         require(!initialized, "Contract already initialized");
 
         totalRealEstateValue = _initialPropertyPrice;
@@ -37,7 +38,7 @@ contract RealEstateToken is ERC20 {
         _mint(propertyOwner, totalRealEstateValue);
     }
 
-    function initializeICO(uint256 usdcAmount) public {
+    function buyInitialTokens(uint256 usdcAmount) public {
         require(block.timestamp < saleEndTime, "Sale period has ended");
         // transfer investor's usdc to this contract
         require(

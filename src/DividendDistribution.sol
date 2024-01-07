@@ -6,7 +6,7 @@ import "./RealEstateToken.sol";
 contract DividendDistribution {
     address public admin;
 
-    // mapping每個RealEstateToken合約到其分紅信息
+    // mapping每個RealEstateToken合約到其分紅資訊
     struct DividendInfo {
         uint256 rentalIncome; // 鏈下房產租金收益
         uint256 capitalGains; // 鏈下房產資本利得

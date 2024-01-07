@@ -32,7 +32,12 @@ contract RealEstateTokenTest is Test {
         uint256 realWorldValue = 1000000 * 1e6;
 
         vm.startPrank(propertyOwner);
-        register.registerProperty(ipfsHash, realWorldValue, saleDuration);
+        register.registerProperty(
+            ipfsHash,
+            realWorldValue,
+            saleDuration,
+            address(usdc)
+        );
         vm.stopPrank();
         (address owner, address tokenAddress) = register.properties(0);
         ret = RealEstateToken(tokenAddress);
@@ -50,7 +55,7 @@ contract RealEstateTokenTest is Test {
         usdc.approve(address(ret), usdc.balanceOf(investor));
         usdc.balanceOf(investor);
         ret.balanceOf(investor);
-        ret.initializeICO(1000 * 1e6);
+        ret.buyInitialTokens(1000 * 1e6);
         assertEq(ret.balanceOf(investor), 1000 * 1e6);
         vm.stopPrank();
     }
