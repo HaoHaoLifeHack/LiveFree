@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "v2-core/interfaces/IUniswapV2Factory.sol";
 import "./TradeController.sol";
-import "forge-std/console.sol";
 
 contract RealEstateToken is ERC20 {
     bool initialized;

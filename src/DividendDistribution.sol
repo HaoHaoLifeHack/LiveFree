@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./RealEstateToken.sol";
-import "forge-std/console.sol";
 
 contract DividendDistribution {
     address public admin;
@@ -73,8 +72,6 @@ contract DividendDistribution {
             totalSupply;
 
         holderDividends -= info.withdrawnDividends[msg.sender];
-        console.log("msg.sender: ", msg.sender);
-        console.log("holderDividends: ", holderDividends);
 
         require(holderDividends > 0, "No dividends available");
 

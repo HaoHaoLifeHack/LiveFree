@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "forge-std/console.sol";
 import "./RealEstateToken.sol";
 
 contract Register {
@@ -26,9 +25,7 @@ contract Register {
     ) public returns (address tokenAddress) {
         bytes memory bytecode = type(RealEstateToken).creationCode;
         require(!isContractDeployed(_ipfsHash), "Property already registered");
-        console.log("_ipfsHash: ", _ipfsHash);
         bytes32 salt = keccak256(abi.encodePacked(_ipfsHash));
-        console.logBytes32(salt);
 
         assembly {
             tokenAddress := create2(
@@ -38,7 +35,6 @@ contract Register {
                 salt
             )
         }
-        console.log("tokenAddress: ", tokenAddress);
         require(tokenAddress != address(0), "Failed to deploy token");
         properties[nextPropertyId] = Property(msg.sender, tokenAddress);
 
@@ -61,7 +57,6 @@ contract Register {
         assembly {
             size := extcodesize(expectedAddress)
         }
-        console.logUint(size);
         return size > 0;
     }
 

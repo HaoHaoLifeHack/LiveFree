@@ -13,7 +13,6 @@ import "v2-periphery/libraries/UniswapV2Library.sol";
 import "v2-core/interfaces/IUniswapV2Factory.sol";
 
 contract LiveFreeScript is Script {
-    //forge script script/LiveFreeScript.s.sol --rpc-url https://eth-sepolia.g.alchemy.com/v2/skSSwajFv3eJH3DG25u0Q6OSrzMGl9sc
     string ETHEREUM_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
     uint PRIVATE_KEY = vm.envUint("PRIVATE_KEY");
 
