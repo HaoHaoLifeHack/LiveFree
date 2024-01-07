@@ -43,7 +43,9 @@ contract LiveFreeScript is Script {
             usdc
         );
 
-        DividendDistribution dividendDistribution = new DividendDistribution();
+        DividendDistribution dividendDistribution = new DividendDistribution(
+            usdc
+        );
 
         vm.stopBroadcast();
     }
